@@ -8,21 +8,21 @@ import swaggerJson from "./swagger.json";
 type Records = { [key: string]: string | undefined };
 
 export const NestGraphQLModel = () => {
-  //   const [properties, setProperties] = useState<string | undefined>(undefined);
+  const [swagger, setSwagger] = useState<string | undefined>(undefined);
   const [name, setName] = useState<string | undefined>(undefined);
 
   return (
     <div>
       <form>
-        {/* <div className="row">
+        <div className="row">
           <textarea
             name="fancy-textarea"
             id="fancy-textarea"
-            value={properties}
-            onChange={({ target: { value } }) => setProperties(value)}
+            value={swagger}
+            onChange={({ target: { value } }) => setSwagger(value)}
           ></textarea>
-          <label htmlFor="fancy-textarea">Properties</label>
-        </div> */}
+          <label htmlFor="fancy-textarea">Swagger.json</label>
+        </div>
         <div className="row">
           <input
             type="text"
@@ -49,14 +49,20 @@ export const NestGraphQLModel = () => {
         Copy
       </button>
       <pre id="code_div" className="code">
-        {convert(name)}
+        {convert(name, swagger)}
       </pre>
     </div>
   );
 };
 
-function convert(name: string | undefined): string {
+function convert(
+  name: string | undefined,
+  swagger: string | undefined
+): string {
   if (!name) {
+    return "";
+  }
+  if (!swagger) {
     return "";
   }
   const rendered: string[] = [];
