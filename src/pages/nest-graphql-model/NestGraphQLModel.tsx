@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import "./NestGraphQLModel.css";
-import swaggerJson from "./swagger.json";
 
 type Records = { [key: string]: string | undefined };
 
@@ -66,22 +65,22 @@ function convert(
     return "";
   }
   const rendered: string[] = [];
-  // WithdrawalDto2
+  const swaggerJson = JSON.parse(swagger);
   return `
 /* eslint-disable max-classes-per-file */
 import { Field, Float, Int, ObjectType, registerEnumType } from "@nestjs/graphql";
   
-${render(name, rendered)}  
+${render(name, swaggerJson, rendered)}  
   `;
 }
 
-function render(name: string, rendered: string[]): string {
+function render(name: string, swaggerJson: any, rendered: string[]): string {
   const schemas = swaggerJson.components.schemas;
   // find target schema
   const CLASS = (schemas as any)[name];
 
   if (CLASS.type === "object") {
-    return renderObject(name, CLASS.properties, rendered);
+    return renderObject(name, CLASS.properties, swaggerJson, rendered);
   }
   if (CLASS.enum) {
     return renderEnum(name, CLASS, rendered);
@@ -94,6 +93,7 @@ function render(name: string, rendered: string[]): string {
 function renderObject(
   name: string,
   properties: any,
+  swaggerJson: any,
   rendered: string[]
 ): string {
   const keys = Object.keys(properties);
@@ -106,7 +106,7 @@ function renderObject(
       // find def name
       const parts = def.items.$ref.split("/");
       const defName = parts[parts.length - 1];
-      otherClasses.push(render(defName, rendered));
+      otherClasses.push(render(defName, swaggerJson, rendered));
       rows.push(renderPropertyArray(key, defName, def.nullable));
     } else if (def.type) {
       // render property
@@ -116,14 +116,14 @@ function renderObject(
       // find def name
       const parts = def.allOf[0].$ref.split("/");
       const defName = parts[parts.length - 1];
-      otherClasses.push(render(defName, rendered));
+      otherClasses.push(render(defName, swaggerJson, rendered));
       rows.push(renderPropertyClass(key, defName, def.nullable));
     }
   }
 
   const template = `
         @ObjectType()
-        export class ${name} {
+        export class ${getRenderName(name)} {
 
           ${rows.join("\n")}
           
@@ -141,13 +141,15 @@ function renderEnum(name: string, ref: any, rendered: string[]) {
   }
   // render enum
   return `
-    export enum ${name} {
+    export enum ${getRenderName(name)} {
         ${ref.enum
           .map((item: string) => item + " = " + `"${item}",`)
           .join("\n")}
     }
 
-    registerEnumType(${name}, { name: "${name}" });
+    registerEnumType(${getRenderName(name)}, { name: "${getRenderName(
+      name
+    )}" });
     `;
 }
 
@@ -183,13 +185,22 @@ function renderPropertyArray(
 ): string {
   const nullable = isNullable ? `, { nullable: true }` : "";
   return `
-                @Field(() => [${type}]${nullable})
-                ${key}: ${type}[];`;
+                @Field(() => [${getRenderName(type)}]${nullable})
+                ${key}: ${getRenderName(type)}[];`;
 }
 
 function renderPropertyClass(key: string, type: string, isNullable: boolean) {
   const nullable = isNullable ? `, { nullable: true }` : "";
   return `
-                @Field(() => ${type}${nullable})
-                ${key}: ${type};`;
+                @Field(() => ${getRenderName(type)}${nullable})
+                ${key}: ${getRenderName(type)};`;
+}
+
+function getRenderName(name: string): string {
+  const regex = /\w+\d/;
+  let renderName = name;
+  if (regex.test(name)) {
+    renderName = name.slice(0, name.length - 1);
+  }
+  return renderName;
 }
