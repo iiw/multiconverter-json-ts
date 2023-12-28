@@ -5,7 +5,7 @@ import { NestGraphQLModel } from "./pages/nest-graphql-model/NestGraphQLModel";
 
 function App() {
   return (
-    <BrowserRouter basename="/multiconverter-json-ts">
+    <BrowserRouter>
       <Routes>
         <Route index element={<Home />}></Route>
         <Route path="graphql-nest" element={<NestGraphQLModel />} />
